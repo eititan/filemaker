@@ -1,0 +1,70 @@
+#!/usr/bin/python
+# John Hutchins 
+
+import sys
+import shlex
+import random
+import os
+
+#exit of commandline params are not as expected
+if len(sys.argv) != 4:
+    print("Usage: ./filemaker INPUTCOMMANDFILE OUTPUTFILE RECORDCOUNT")
+    exit(1)
+
+#catching any errors with opening files as per Ted's request
+try:
+    commandFile = open(sys.argv[1], 'r')
+    outFile = open(sys.argv[2], 'w')
+    rCount = int(sys.argv[3])
+except Exception as e:
+    print("Error: '" + str(e))
+    exit(1)
+
+#preprocessing command list
+commands = commandFile.readlines()
+
+randomFiles = {}
+#adding slurp'ed file into randomFiles 
+##dictionary's should be declared before use
+for i in range(len(commands)):
+    command = shlex.split(commands[i])
+    if command[0] == "FILEWORD":
+        tempIn = open(command[2], 'r')
+        randomFiles[command[2]] = tempIn.readlines()
+        
+#loop for amount sys.argv count
+for i in range(rCount):
+
+    #random data holds all label's info from commands list
+    ##reset n times
+    randomData = {}
+
+    #loops through each command in commands list
+    for c in range(len(commands)): 
+        #split command, index[0] of shlex split is always command
+        command = shlex.split(commands[c])
+
+        #header is always at top of commands list
+        if command[0] == "HEADER" and i == 0:
+            outFile.write(command[1].decode('string_escape'))
+        if command[0] == "STRING":
+            outFile.write(command[1].decode('string_escape'))
+        if command[0] == "FILEWORD":
+            #fetch random word from randomFiles object and add label to randomData
+            randWord = randomFiles[command[2]][random.randint(0, len(randomFiles[command[2]])-1)]
+            randWord = randWord.rstrip()
+            randomData[command[1]] = randWord
+	    outFile.write(randomData[command[1]])
+        if command[0] == "NUMBER":
+            #generate random number and add label to randomData
+            minNum = int(command[2])
+	    maxNum = int(command[3])
+
+            randNum = random.randint(minNum, maxNum)
+	    randomData[command[1]] = str(randNum)
+            outFile.write(randomData[command[1]])
+        if command[0] == "REFER":
+            #add label to outFile with matching key
+            outFile.write(randomData[command[1]])
+
+exit(0)
